@@ -2,19 +2,19 @@ rater193's Localization Engine
 If you are reading this, then you want to know how to incorperate the localization engine into your game. There are a few references you will need to know in order to get started.
 References:
 
-[x] Scripts/LocalEngine/LOCALIZATION_VALUES -
+[x] `Scripts/LocalEngine/LOCALIZATION_VALUES` -
 	This is the file we use for storing and accessing our localization variables.
 
 
-[x] Scripts/LocalEngine/LocalizationUtilities - 
+[x] `Scripts/LocalEngine/LocalizationUtilities` - 
 	This file is how we reference all the utility and API features of the engine
 
 
-[x] Scripts/LocalEngine/Editor/LocalizationEditorUtilities - 
+[x] `Scripts/LocalEngine/Editor/LocalizationEditorUtilities` - 
 	Same as before, but values specifically for the unity editor
 
 
-[x] Scripts/LocalEngine/LOCALIZATION - 
+[x] `Scripts/LocalEngine/LOCALIZATION` - 
 	This file is used for the LOCALIZATION api access.
 ```cs
 LOCALIZATION myLocalization = LocalizationUtilities.LoadLocalization("EN");
@@ -36,7 +36,7 @@ MyLocalization.GetKey("EXAMPLE_1");
 MyLocalization.SetKey("EXAMPLE_1", "Some Value");
 ```
 
-[x] StreamingAssets/Data/Localization - 
+[x] `StreamingAssets/Data/Localization` - 
 	This is where your localization files are stored. To create a new localization language, create a new folder in that directory, and then click the menu item: `rater193/debug/update localization directories`
 
 [x] In order to update the localization directories with the new values, you can goto
