@@ -35,3 +35,7 @@ MyLocalization.GetKey("EXAMPLE_1");
 //And finally, for the editor, if you want to set the value, you can use this
 MyLocalization.SetKey("EXAMPLE_1", "Some Value");
 ```
+
+[x] In order to update the localization directories with the new values, you can goto
+	`rater193/debug/update localization directories`
+	This will go into each sub folder, and add any missing values to them, and remove any non-existant values.
