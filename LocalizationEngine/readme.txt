@@ -36,4 +36,3 @@ References:
 	//And finally, for the editor, if you want to set the value, you can use this
 	MyLocalization.SetKey("EXAMPLE_1", "Some Value");
 
-```
