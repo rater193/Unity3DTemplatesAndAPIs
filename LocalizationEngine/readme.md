@@ -34,6 +34,12 @@ MyLocalization.GetKey("EXAMPLE_1");
 
 //And finally, for the editor, if you want to set the value, you can use this
 MyLocalization.SetKey("EXAMPLE_1", "Some Value");
+
+//This lets you get all your localization languages puts them into an array.
+//Example:
+//["EN", "DE"]
+string[] localizations = LocalizationUtilities.GetLocalizations();
+
 ```
 
 [x] `StreamingAssets/Data/Localization` - 
