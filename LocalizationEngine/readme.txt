@@ -17,6 +17,7 @@ References:
 [x] Scripts/LocalEngine/LOCALIZATION
 	This file is used for the LOCALIZATION api access.
 ```cs
+
 	LOCALIZATION myLocalization = LocalizationUtilities.LoadLocalization("EN");
 
 	//This is an example to quickly get the value of the localization key for ingame
@@ -34,4 +35,5 @@ References:
 
 	//And finally, for the editor, if you want to set the value, you can use this
 	MyLocalization.SetKey("EXAMPLE_1", "Some Value");
+
 ```
