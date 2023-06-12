@@ -1,0 +1,2 @@
+This engine lets you save/load entire games at once, using an extensive savedata API. You just need to set the class to be `system.serializable`, extend it to `SaveObject` to access the API functionality.
+Keep in mind, when it loads, it will delete all the currently objects in the scene that extend to `SaveObject`, then instantiate all the new ones in the root scene directory. So you will have to do some work setting them where they are supposed to be, such as inventories, and what not.
