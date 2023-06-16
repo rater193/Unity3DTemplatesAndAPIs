@@ -29,7 +29,8 @@ ChunkEngine.eventCanUnloadChunk += (WorldChunk chunk, EventShouldChunkUnload evt
 
     //This cancels the event
     evt.Cancel();
-    
+
 }
 
+//In order for the chunkengine to work, it must be on a gameobject somewhere in the workspace
 ```
