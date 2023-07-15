@@ -16,7 +16,7 @@ namespace modloader
 		
 		
 	
-		public LoadedModloaderData GetClassesExtendingGameModFromDlls(List<string> ListOfDLLsToLoad)
+		public LoadedModloaderData LoadModClassesFromDLLs(List<string> ListOfDLLsToLoad)
 		{
 			LoadedModloaderData returnedLoaderData = new LoadedModloaderData();
 
