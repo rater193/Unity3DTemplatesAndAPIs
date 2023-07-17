@@ -28,90 +28,48 @@ class Program
 			ResetConsole();
 			
 			Println();
+			Println("Initializing modloader...");
+			modLoader = new ModLoader();
 
-			switch (selectedMenu)
+			//Here you can setup the list of DLLs to load, and even their order in which to load (If you wanted)
+			Println("Retreiving the list of DLL files within the directory.");
+			List<string> listOfDLLs;
+			string modsDirectory = "./";
+			string[] dllFiles = Directory.GetFiles(modsDirectory, "*.dll", SearchOption.AllDirectories);
+			listOfDLLs = dllFiles.ToList();
+
+
+			//Here you can see the printout of DLLs
+			Println("List of DLLs:");
+
+			foreach (string filepath in listOfDLLs)
 			{
-				case "start":
-					Println("Main menu");
-					Println("1: Initialize Modloader");
-					Println("2: Load test mod directory");
-					Println("3: Exit");
-					
-					break;
-				default:
-					Println("Unhandled menu: " + selectedMenu);
-					PressAnyKeyToContinue();
-					return;
+				Println("Mod: " + filepath);
 			}
-			
-			Print("Select an option >");
-			string? input = Console.ReadLine(); // Reading the console input
-			if (string.IsNullOrEmpty(input)) break; // This makes an empty string break the while loop so it can terminate easily
 
-			switch (selectedMenu)
+			Println("");
+
+			//Now to pass the list of mods to the modloader
+			LoadedModloaderData modsList = modLoader.LoadModClassesFromDLLs(listOfDLLs);
+			Println("List of mod files:");
+
+			foreach (ModloaderModInstance t in modsList.loadedMods)
 			{
-				case "start":
-					switch (input)
-					{
-						case "1":
-							ResetConsole();
-							Println("Initializing modloader...");
-							modLoader = new ModLoader();
-
-							//Here you can setup the list of DLLs to load, and even their order in which to load (If you wanted)
-							Println("Retreiving the list of DLL files within the directory.");
-							List<string> listOfDLLs;
-							string modsDirectory = "./";
-							string[] dllFiles = Directory.GetFiles(modsDirectory, "*.dll", SearchOption.AllDirectories);
-							listOfDLLs = dllFiles.ToList();
-
-
-							//Here you can see the printout of DLLs
-							Println("List of DLLs:");
-							
-							foreach (string filepath in listOfDLLs)
-							{
-								Println("Mod: " + filepath);
-							}
-
-							Println("");
-							
-							//Now to pass the list of mods to the modloader
-							LoadedModloaderData modsList = modLoader.LoadModClassesFromDLLs(listOfDLLs);
-							Println("List of mod files:");
-							
-							foreach (ModloaderModInstance t in modsList.loadedMods)
-							{
-								Println("Mod: " + t.modName);
-							}
-							
-							Println("Done...");
-							PressAnyKeyToContinue();
-							break;
-						case "2":
-
-							break;
-						case "3":
-
-							break;
-						default:
-							ResetConsole();
-							Println("");
-							Println("Unhandled input option: " + input);
-							PressAnyKeyToContinue();
-							break;
-					}
-					break;
-				
-				default:
-					ResetConsole();
-					Println("Unhandled menu: " + selectedMenu);
-					PressAnyKeyToContinue();
-					return;
+				Println("Mod: " + t.modName);
+				string baseName = "  ";
+				Println(baseName + "Classes: ");
+				baseName = "   - ";
+				foreach (Type _t in t.ListOfModClasses)
+				{
+					Println(baseName + "" + _t.FullName);
+				}
+				Println();
 			}
-			
+
+			Println("Done...");
+			PressAnyKeyToContinue();
+
 			Println();
-			row += 4;
 		} while (true);
 		return;
 
