@@ -15,3 +15,6 @@ Unity Cloud Console: <a href="https://cloud.unity.com/">https://cloud.unity.com/
 Once you log into the cloud console, make sure you select your project.<br/>
 <img src="https://i.imgur.com/Odjiykg.png"/>
 ---
+From your project's cloud menu, select "Products" in the left sidebar menu
+<img src="https://i.imgur.com/1ewP4AC.png" />
+---
