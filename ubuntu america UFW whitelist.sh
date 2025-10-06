@@ -1,87 +1,80 @@
-#!/usr/bin/env bash
-# reset-and-allow-ipdeny-us.sh
-# Resets UFW, sets default deny inbound, and allows all US CIDRs from ipdeny.com.
-# Optional: preserves current SSH client IP access to port 22 during the change.
-# Usage: sudo ./reset-and-allow-ipdeny-us.sh [--keep-ssh]
+#!/bin/bash
+# Resets UFW, sets default policies, and bulk-allows entries from a file.
+# Supports IPv4 CIDRs (A.B.C.D/N) and single IPv4 addresses.
+# Usage:
+#   sudo bash ufw-apply-allowlist.sh                 # uses ./allowed_ips.txt
+#   sudo bash ufw-apply-allowlist.sh /path/to/file   # custom file
+#   sudo bash ufw-apply-allowlist.sh --keep-ssh      # keep current SSH IP
+#   sudo bash ufw-apply-allowlist.sh /path/ips.txt --keep-ssh
 
 set -euo pipefail
 
-IPDENY_URL="https://www.ipdeny.com/ipblocks/data/aggregated/us-aggregated.zone"
-CACHE_DIR="/etc/ufw/ipdeny"
-LIST_FILE="${CACHE_DIR}/us-aggregated.zone"
+# -------- Config / Args --------
+DEFAULT_LIST="./allowed_ips.txt"
+LIST_FILE="${DEFAULT_LIST}"
 KEEP_SSH="no"
 
-if [[ ${1:-} == "--keep-ssh" ]]; then
-  KEEP_SSH="yes"
-fi
+# Parse args (order agnostic for 2 simple options)
+for arg in "${@:-}"; do
+  case "$arg" in
+    --keep-ssh) KEEP_SSH="yes" ;;
+    *)
+      if [[ -z "${LIST_FILE:-}" || "$LIST_FILE" == "$DEFAULT_LIST" ]]; then
+        LIST_FILE="$arg"
+      fi
+      ;;
+  esac
+done
+
+# -------- Helpers --------
+err() { echo "ERROR: $*" >&2; }
 
 require_root() {
-  if [[ $EUID -ne 0 ]]; then
-    echo "ERROR: Please run as root (use sudo)." >&2
+  if [[ "${EUID}" -ne 0 ]]; then
+    err "Please run as root (use sudo)."
     exit 1
   fi
 }
 
 require_cmds() {
   local missing=()
-  for c in ufw curl awk grep sed sort uniq; do
+  for c in ufw awk grep sed sort uniq tr; do
     command -v "$c" >/dev/null 2>&1 || missing+=("$c")
   done
   if ((${#missing[@]})); then
-    echo "ERROR: Missing required commands: ${missing[*]}" >&2
+    err "Missing required commands: ${missing[*]}"
     exit 1
   fi
 }
 
-ensure_cache_dir() {
-  mkdir -p "$CACHE_DIR"
-  chmod 0755 "$CACHE_DIR"
-}
-
-download_list() {
-  echo "Downloading US aggregate list from ipdeny..."
-  curl -fsSL "$IPDENY_URL" -o "$LIST_FILE.tmp"
-  # basic validation: IPv4 CIDR lines only
-  grep -E '^[0-9]{1,3}(\.[0-9]{1,3}){3}/[0-9]{1,2}$' "$LIST_FILE.tmp" > "$LIST_FILE.clean" || true
-  if [[ ! -s "$LIST_FILE.clean" ]]; then
-    echo "ERROR: Downloaded list is empty or invalid." >&2
-    rm -f "$LIST_FILE.tmp" "$LIST_FILE.clean"
+validate_input_file() {
+  if [[ ! -f "$LIST_FILE" ]]; then
+    err "Allowlist file not found: $LIST_FILE"
     exit 1
   fi
-  # normalized/unique list
-  sort -u "$LIST_FILE.clean" > "$LIST_FILE"
-  rm -f "$LIST_FILE.tmp" "$LIST_FILE.clean"
-  echo "Saved ${LIST_FILE} ($(wc -l < "$LIST_FILE") CIDRs)."
 }
 
 detect_and_allow_ssh() {
-  if [[ "$KEEP_SSH" != "yes" ]]; then
-    return
-  fi
+  [[ "$KEEP_SSH" != "yes" ]] && return 0
   local remote_ip=""
-  # Prefer SSH_CONNECTION env var; fallback to who am i; fallback to last hop in last
   if [[ -n "${SSH_CONNECTION:-}" ]]; then
-    # SSH_CONNECTION: "<client_ip> <client_port> <server_ip> <server_port>"
     remote_ip="$(awk '{print $1}' <<<"$SSH_CONNECTION")"
   fi
   if [[ -z "$remote_ip" ]]; then
     remote_ip="$(who am i 2>/dev/null | awk '{print $5}' | sed 's/[()]//g' | awk -F: '{print $1}')"
   fi
-  if [[ -z "$remote_ip" ]]; then
-    remote_ip="$(last -i | awk 'NR==1 {print $3}')" || true
+  if [[ -z "$remote_ip" || "$remote_ip" == "?" ]]; then
+    echo "WARNING: Could not detect SSH client IP; not adding a temporary SSH rule."
+    return 0
   fi
-  if [[ -n "$remote_ip" && "$remote_ip" != "?" ]]; then
-    echo "Temporarily allowing SSH from $remote_ip ..."
-    ufw allow from "$remote_ip" to any port 22 proto tcp comment 'temp-ssh-keepalive'
-  else
-    echo "WARNING: Could not determine SSH client IP; not adding a temp SSH rule."
-  fi
+  echo "Temporarily allowing SSH from $remote_ip ..."
+  ufw allow from "$remote_ip" to any port 22 proto tcp comment 'temp-ssh-keepalive'
 }
 
-configure_ipv6() {
-  # Enable UFW IPv6 if the kernel supports it (optional but sensible)
+configure_ipv6_if_enabled() {
+  # If IPv6 is enabled on the host, enable IPv6 handling in UFW.
   local ufw_conf="/etc/ufw/ufw.conf"
-  if [[ -f /proc/sys/net/ipv6/conf/all/disable_ipv6 ]] && [[ $(cat /proc/sys/net/ipv6/conf/all/disable_ipv6) -eq 0 ]]; then
+  if [[ -f /proc/sys/net/ipv6/conf/all/disable_ipv6 ]] && [[ "$(cat /proc/sys/net/ipv6/conf/all/disable_ipv6)" -eq 0 ]]; then
     if grep -q '^IPV6=' "$ufw_conf"; then
       sed -i 's/^IPV6=.*/IPV6=yes/' "$ufw_conf"
     else
@@ -91,50 +84,70 @@ configure_ipv6() {
 }
 
 reset_ufw() {
-  echo "Resetting UFW (removes all existing rules) ..."
+  echo "Resetting UFW (removing all rules) ..."
   ufw --force reset
-  configure_ipv6
+  configure_ipv6_if_enabled
   echo "Setting defaults: deny incoming, allow outgoing, deny routed ..."
   ufw default deny incoming
   ufw default allow outgoing
   ufw default deny routed
 }
 
+# Simple validators
+is_ipv4() { [[ "$1" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]]; }
+is_cidr() { [[ "$1" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}/([0-9]|[12][0-9]|3[0-2])$ ]]; }
+
 apply_allowlist() {
-  local count=0 total
-  total=$(wc -l < "$LIST_FILE")
-  echo "Applying allow rules for ${total} CIDRs (this may take a while) ..."
-  # Tip: UFW is slower with many rules; be patient. For thousands of entries, consider ipset integration.
-  while IFS= read -r cidr; do
-    [[ -z "$cidr" ]] && continue
-    ufw allow from "$cidr" comment "ipdeny-us"
-    ((count++))
-    # print progress every 50
-    if (( count % 50 == 0 )); then
-      echo "  ... $count / $total"
+  local total=0 applied=0 skipped=0
+
+  # Normalize: strip CRs, trim whitespace, drop comments and blanks, unique
+  mapfile -t lines < <(
+    tr -d '\r' < "$LIST_FILE" \
+    | sed 's/^[[:space:]]\+//; s/[[:space:]]\+$//' \
+    | grep -Ev '^(#|;|$)' \
+    | sort -u
+  )
+
+  total="${#lines[@]}"
+  echo "Found $total entries in $LIST_FILE"
+
+  for entry in "${lines[@]}"; do
+    if is_cidr "$entry"; then
+      ufw allow from "$entry" comment 'allowlist'
+      ((applied++))
+    elif is_ipv4 "$entry"; then
+      ufw allow from "$entry" comment 'allowlist'
+      ((applied++))
+    else
+      echo "Skipping unsupported entry (not IPv4/CIDR): $entry"
+      ((skipped++))
     fi
-  done < "$LIST_FILE"
-  echo "Applied $count allow rules."
+
+    # Progress every 50 rules
+    if (( applied % 50 == 0 )); then
+      echo "  ... applied $applied / $total (skipped $skipped)"
+    fi
+  done
+
+  echo "Applied $applied allow rules. Skipped $skipped."
 }
 
 enable_ufw() {
   echo "Enabling UFW ..."
   ufw --force enable
-  echo "Current status:"
   ufw status verbose
 }
 
 main() {
   require_root
   require_cmds
-  ensure_cache_dir
-  download_list
+  validate_input_file
   reset_ufw
   detect_and_allow_ssh
   apply_allowlist
   enable_ufw
   echo "Done."
-  echo "NOTE: If performance becomes an issue with many rules, consider using ipset + UFW before.rules for aggregation."
+  echo "Note: If you need true IP *ranges* like 1.2.3.4-1.2.3.200, convert them to CIDR first (I can provide a helper)."
 }
 
-main "$@"
+main
