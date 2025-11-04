@@ -1,0 +1,10 @@
+```json
+{
+  "id": "crit_boost_1",
+  "name": "Keen Edge",
+  "description": "Small increase to critical chance/damage.",
+  "tier": 2,
+  "cost": 1,
+  "effect": "crit_boost_1"
+}
+```
