@@ -1,0 +1,10 @@
+```json
+{
+  "id": "add_damage_2",
+  "name": "Brutal Edge",
+  "description": "Adds +2 flat damage to the weapon.",
+  "tier": 1,
+  "cost": 1,
+  "effect": "add_damage_2"
+}
+```

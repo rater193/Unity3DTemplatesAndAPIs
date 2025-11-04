@@ -1,0 +1,10 @@
+```json
+{
+  "id": "armor_pierce_5",
+  "name": "Armor Piercing",
+  "description": "Adds +5 armor penetration to attacks.",
+  "tier": 2,
+  "cost": 1,
+  "effect": "armor_pierce_5"
+}
+```

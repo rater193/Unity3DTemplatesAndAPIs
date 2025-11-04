@@ -1,0 +1,10 @@
+```json
+{
+  "id": "yeet_to_moon",
+  "name": "Lunar Yeeter",
+  "description": "Occasionally sends attackers flying all the way to the sky. (Wacky!)",
+  "tier": 5,
+  "cost": 3,
+  "effect": "yeet_to_moon"
+}
+```

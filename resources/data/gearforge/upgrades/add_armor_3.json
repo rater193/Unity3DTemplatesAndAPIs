@@ -1,0 +1,10 @@
+```json
+{
+  "id": "add_armor_3",
+  "name": "Reinforced Plates",
+  "description": "Adds +3 flat armor to the item (for armor pieces).",
+  "tier": 1,
+  "cost": 1,
+  "effect": "add_armor_3"
+}
+```
